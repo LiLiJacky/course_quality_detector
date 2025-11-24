@@ -9,3 +9,7 @@ dist/
 .coverage
 htmlcov/
 .DS_Store
+data/
+outputs/
+.vscode/
+yolo*.pt
