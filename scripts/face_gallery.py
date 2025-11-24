@@ -9,7 +9,6 @@ Embeddings are stored in output_dir as:
 
 import argparse
 import json
-import os
 from pathlib import Path
 from typing import List, Tuple
 
@@ -57,6 +56,7 @@ def build_gallery(
     det_name: str,
     rec_name: str,
     max_images: int | None = None,
+    allowed_ids: set[str] | None = None,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     app = _init_insightface(det_name)
@@ -68,6 +68,8 @@ def build_gallery(
         if max_images is not None and idx >= max_images:
             break
         student_id = image_path.stem
+        if allowed_ids is not None and student_id not in allowed_ids:
+            continue
         try:
             emb, face_info = _extract_embedding(app, image_path)
         except ValueError as err:
@@ -126,15 +128,30 @@ def parse_args():
         default=None,
         help="Optional limit on number of images to process (for quick tests)",
     )
+    parser.add_argument(
+        "--allowed_ids",
+        type=Path,
+        default=None,
+        help="Optional text file of allowed IDs (one per line); if provided, only these IDs are embedded",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
+    roster = None
+    if args.allowed_ids:
+        roster = {
+            line.strip()
+            for line in args.allowed_ids.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+        print(f"Loaded {len(roster)} allowed IDs.")
     build_gallery(
         args.picture_dir,
         args.output_dir,
         args.det_name,
         args.rec_name,
         args.max_images,
+        roster,
     )

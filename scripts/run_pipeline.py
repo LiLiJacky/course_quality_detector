@@ -47,6 +47,11 @@ def step_face_gallery(args):
                 if args.max_images is not None
                 else []
             ),
+            *(
+                ["--allowed_ids", str(args.allowed_ids)]
+                if args.allowed_ids is not None
+                else []
+            ),
         ]
     )
 
