@@ -7,10 +7,11 @@
 pip install -r requirements.txt
 ```
 
-2) 编辑配置（班级、专业、Excel、视频路径等）：`configs/config.yaml`
+2) 编辑配置：`configs/config.yaml`（班级、专业、Excel、视频路径、采样/阈值等）。
 
-3) 一键运行（自动按配置完成名册过滤、人脸库、出勤/报告）：
+3) 一键运行（自动完成名册过滤、人脸库、出勤/报告）：
 ```bash
+# 读取 configs/config.yaml 执行全流程
 python scripts/run_pipeline.py --config configs/config.yaml
 ```
 
