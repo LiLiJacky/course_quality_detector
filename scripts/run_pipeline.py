@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from typing import List
 
+import yaml
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -162,6 +164,12 @@ def step_metrics(args):
 def parse_args():
     parser = argparse.ArgumentParser(description="Run end-to-end classroom pipeline")
     parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("configs/config.yaml"),
+        help="Path to YAML config overriding defaults",
+    )
+    parser.add_argument(
         "--picture_dir",
         type=Path,
         default=Path("data/picture"),
@@ -271,8 +279,19 @@ def parse_args():
     return parser.parse_args()
 
 
+def apply_config(args):
+    cfg_path: Path = args.config
+    if cfg_path and cfg_path.exists():
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+        for k, v in cfg.items():
+            if hasattr(args, k):
+                setattr(args, k, v)
+    return args
+
+
 def main():
-    args = parse_args()
+    args = apply_config(parse_args())
     step_face_gallery(args)
     if args.quick_attendance_only:
         step_quick_attendance(args)

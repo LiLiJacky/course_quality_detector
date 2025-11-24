@@ -1,0 +1,27 @@
+# Default configuration for classroom quality pipeline
+#
+# Paths
+excel: "data/picture/2024级学生名单.xlsx"
+class_name: "英语246"
+major_name: "商务英语"
+roster_output: "rosters/english246.txt"
+video: "data/video/南通职大主楼509室047zk_20251029072500_20251029091707_2.mp4"
+picture_dir: "data/picture"
+gallery_dir: "outputs/face_gallery"
+track_dir: "outputs/track"
+
+# Models
+det_model: "yolo11x.pt"
+det_name: "buffalo_l"
+rec_name: "adaface_ir101"
+
+# Attendance / matching
+match_threshold: 0.28
+frame_stride: 20
+max_frames: 240
+min_count: 3
+max_images: null   # set to an int to limit gallery images
+max_crops: null    # only used in non-quick mode
+
+# Modes
+quick_attendance_only: true
