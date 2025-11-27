@@ -5,7 +5,18 @@ excel: "data/picture/2024级学生名单.xlsx"
 class_name: "英语246"
 major_name: "商务英语"
 roster_output: "rosters/english246.txt"
-video: "data/video/南通职大主楼509室047zk_20251029072500_20251029091707_2.mp4"
+
+# Single-video path (used by run_pipeline quick mode)
+video: "data/video/509教室-0750-0915-英语246/509A前摄像头/南通职大主楼509室047zk_20251029072500_20251029091707_1.mp4"
+
+# Multi-camera root
+video_dir: "data/video/509教室-0750-0915-英语246"
+video_glob: "**/*.mp4"
+
+# Ground truth for this course
+ground_truth: "data/ground_truth/509教室-0750-0915-英语246.xlsx"
+target_count: 30  # expected attendance; early stop when reached
+
 picture_dir: "data/picture"
 gallery_dir: "outputs/face_gallery"
 track_dir: "outputs/track"
@@ -16,10 +27,10 @@ det_name: "buffalo_l"
 rec_name: "adaface_ir101"
 
 # Attendance / matching
-match_threshold: 0.28
-frame_stride: 20
-max_frames: 240
-min_count: 3
+match_threshold: 0.3  # 典型人脸识别阈值，避免过低
+frame_stride: 10      # 更密集采样以提升召回
+max_frames: null      # 全量帧（每段视频全扫）
+min_count: 2
 max_images: null   # set to an int to limit gallery images
 max_crops: null    # only used in non-quick mode
 

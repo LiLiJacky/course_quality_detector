@@ -12,7 +12,19 @@ import json
 from pathlib import Path
 from typing import List, Tuple
 
+import platform
+
 import numpy as np
+
+
+def _select_providers() -> list:
+    try:
+        import torch
+        if torch.cuda.is_available() and platform.system().lower().startswith("windows"):
+            return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+    except Exception:
+        pass
+    return ["CPUExecutionProvider"]
 
 
 def _init_insightface(det_name: str):
@@ -23,9 +35,10 @@ def _init_insightface(det_name: str):
             "insightface is required. Install with `pip install insightface`."
         ) from exc
 
+    providers = _select_providers()
     app = FaceAnalysis(
         name=det_name,
-        providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+        providers=providers,
         allowed_modules=["detection", "recognition"],
     )
     # Current InsightFace auto-loads the bundled recognition model in the pack (e.g., buffalo_l).

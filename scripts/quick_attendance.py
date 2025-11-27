@@ -11,6 +11,7 @@ Outputs:
 
 import argparse
 import json
+import platform
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -33,6 +34,16 @@ def load_gallery(gallery_dir: Path) -> Tuple[np.ndarray, List[dict]]:
     return embeddings.astype(np.float32), meta
 
 
+def _select_providers() -> list:
+    try:
+        import torch
+        if torch.cuda.is_available() and platform.system().lower().startswith("windows"):
+            return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+    except Exception:
+        pass
+    return ["CPUExecutionProvider"]
+
+
 def _init_face_app(det_name: str):
     try:
         from insightface.app import FaceAnalysis
@@ -40,9 +51,10 @@ def _init_face_app(det_name: str):
         raise SystemExit(
             "insightface is required. Install with `pip install insightface`."
         ) from exc
+    providers = _select_providers()
     app = FaceAnalysis(
         name=det_name,
-        providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+        providers=providers,
         allowed_modules=["detection", "recognition"],
     )
     app.prepare(ctx_id=0, det_size=(960, 960))
@@ -138,6 +150,7 @@ def quick_attendance(
         f"Saved attendance for {len(attendance_ids)} students "
         f"from {processed} sampled frames to {output_path}"
     )
+    return output
 
 
 def parse_args():
