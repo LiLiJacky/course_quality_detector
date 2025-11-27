@@ -2,8 +2,10 @@
 
 ## Quick start
 
-1) 创建虚拟环境并安装依赖（需 GPU/CUDA 才能跑得动；本机为 CPU 会较慢）：
+1) 创建 Conda 虚拟环境并安装依赖（GPU/CUDA 推荐，CPU 也可跑但较慢）：
 ```bash
+conda create -y -n cqdetector python=3.10
+conda activate cqdetector
 pip install -r requirements.txt
 ```
 
