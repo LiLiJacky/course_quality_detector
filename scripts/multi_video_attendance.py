@@ -152,6 +152,7 @@ def main():
         raise SystemExit(f"No videos found under {args.video_dir} with pattern {args.video_glob}")
 
     agg_counts: Dict[str, int] = {}
+    agg_sim_sums: Dict[str, float] = {}
     per_video: List[dict] = []
     total_frames_processed = 0
     gt_ids = load_ground_truth(args.ground_truth)
@@ -172,6 +173,8 @@ def main():
         )
         for sid, cnt in result["recognized_counts"].items():
             agg_counts[sid] = agg_counts.get(sid, 0) + cnt
+        for sid, sim_sum in result.get("similarity_sums", {}).items():
+            agg_sim_sums[sid] = agg_sim_sums.get(sid, 0.0) + sim_sum
         per_video.append({"video": str(vid), "detected": len(result["attendance_ids"]), "faces": result.get("faces_detected", 0)})
         total_frames_processed += result.get("frames_processed", 0)
 
@@ -181,7 +184,14 @@ def main():
             print("Early stop: all roster/GT IDs recognized with threshold applied.")
             break
 
-    attendance_ids = sorted([sid for sid, cnt in agg_counts.items() if cnt >= args.min_count])
+    attendance_ids = []
+    for sid, cnt in agg_counts.items():
+        if cnt < args.min_count:
+            continue
+        mean_sim = agg_sim_sums.get(sid, 0.0) / cnt
+        if mean_sim >= args.match_threshold:
+            attendance_ids.append(sid)
+    attendance_ids = sorted(attendance_ids)
     output = {
         "attendance_ids": attendance_ids,
         "recognized_counts": agg_counts,

@@ -83,6 +83,7 @@ def quick_attendance(
         raise SystemExit(f"Failed to open video {video_path}")
 
     recognized: Dict[str, int] = {}
+    sim_sums: Dict[str, float] = {}
     total_faces = 0
     matches: List[dict] = []
 
@@ -117,6 +118,7 @@ def quick_attendance(
             best_id = gallery_ids[best_idx] if best_sim >= threshold else None
             if best_id:
                 recognized[best_id] = recognized.get(best_id, 0) + 1
+                sim_sums[best_id] = sim_sums.get(best_id, 0.0) + best_sim
             matches.append(
                 {
                     "frame": frame_idx,
@@ -137,6 +139,7 @@ def quick_attendance(
     output = {
         "attendance_ids": attendance_ids,
         "recognized_counts": recognized,
+        "similarity_sums": sim_sums,
         "matches": matches,
         "threshold": threshold,
         "frame_stride": frame_stride,
