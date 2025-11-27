@@ -334,8 +334,8 @@ def apply_config(args):
         with open(cfg_path, "r", encoding="utf-8") as f:
             cfg = yaml.safe_load(f) or {}
         for k, v in cfg.items():
-            if hasattr(args, k) and v is not None:
-                if k in path_keys:
+            if hasattr(args, k):
+                if k in path_keys and v is not None:
                     setattr(args, k, Path(v))
                 else:
                     setattr(args, k, v)

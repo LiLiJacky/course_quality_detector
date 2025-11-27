@@ -21,6 +21,16 @@ python scripts/run_pipeline.py --config configs/config.yaml
 
 # 如果仅跑小规模切片数据，添加 --sample_mode（需提前用 scripts/slice_videos.py 生成 sample）
 python scripts/run_pipeline.py --config configs/config.yaml --sample_mode
+
+# 多摄像头全量（默认阈值 0.3，frame_stride=10，max_frames=null 全扫）
+python scripts/multi_video_attendance.py --config configs/config.yaml \
+  --attendance_output outputs/attendance_multi.json \
+  --metrics_output outputs/metrics_multi.json
+
+# 多摄像头小规模（使用 sample 目录，不影响全量配置）
+python scripts/multi_video_attendance.py --config configs/config.yaml --sample_mode \
+  --attendance_output outputs/attendance_multi.json \
+  --metrics_output outputs/metrics_multi.json
 ```
 
 输出文件：

@@ -86,10 +86,10 @@ def parse_args():
     parser.add_argument("--det_name", type=str, default="buffalo_l")
     parser.add_argument("--match_threshold", type=float, default=0.28)
     parser.add_argument("--frame_stride", type=int, default=20)
-    parser.add_argument("--max_frames", type=int, default=240)
+    parser.add_argument("--max_frames", type=int, default=None, help="If None, process full video")
     parser.add_argument("--min_count", type=int, default=3)
     parser.add_argument("--max_images", type=int, default=None)
-    parser.add_argument("--target_count", type=int, default=None, help="Early-stop when this many IDs recognized; defaults to roster size or ground truth size")
+    parser.add_argument("--target_count", type=int, default=None, help="(Deprecated) early-stop count; full pass by default")
     parser.add_argument("--ground_truth", type=Path, help="Ground truth attendance file (xlsx or txt)")
     parser.add_argument("--attendance_output", type=Path, default=Path("outputs/attendance.json"))
     parser.add_argument("--metrics_output", type=Path, default=Path("outputs/metrics.json"))
@@ -111,8 +111,8 @@ def apply_config(args):
         "metrics_output",
     }
     for k, v in cfg.items():
-        if hasattr(args, k) and v is not None:
-            if k in path_keys:
+        if hasattr(args, k):
+            if k in path_keys and v is not None:
                 setattr(args, k, Path(v))
             else:
                 setattr(args, k, v)
@@ -139,8 +139,6 @@ def main():
     agg_counts: Dict[str, int] = {}
     per_video: List[dict] = []
     gt_ids = load_ground_truth(args.ground_truth)
-    target_count = args.target_count or (len(gt_ids) if gt_ids else len(allowed_ids))
-
     for vid in videos:
         tmp_out = args.attendance_output.parent / f"tmp_{vid.stem}.json"
         tmp_out.parent.mkdir(parents=True, exist_ok=True)
@@ -158,12 +156,6 @@ def main():
         for sid, cnt in result["recognized_counts"].items():
             agg_counts[sid] = agg_counts.get(sid, 0) + cnt
         per_video.append({"video": str(vid), "detected": len(result["attendance_ids"]), "faces": result.get("faces_detected", 0)})
-
-        current_ids = {sid for sid, cnt in agg_counts.items() if cnt >= args.min_count}
-        print(f"[progress] attendance so far: {len(current_ids)}/{target_count}")
-        if len(current_ids) >= target_count:
-            print("Early stop: reached target attendance count.")
-            break
 
     attendance_ids = sorted([sid for sid, cnt in agg_counts.items() if cnt >= args.min_count])
     output = {
