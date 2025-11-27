@@ -32,7 +32,7 @@ rec_name: "adaface_ir101"
 match_threshold: 0.3  # 典型人脸识别阈值，避免过低
 frame_stride: 10      # 更密集采样以提升召回
 max_frames: null      # 全量帧（每段视频全扫）
-min_count: 2
+min_count: 3          # 提高最少出现次数，减少误检
 max_images: null   # set to an int to limit gallery images
 max_crops: null    # only used in non-quick mode
 
