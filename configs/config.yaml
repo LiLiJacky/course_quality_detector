@@ -12,6 +12,8 @@ video: "data/video/509教室-0750-0915-英语246/509A前摄像头/南通职大�
 # Multi-camera root
 video_dir: "data/video/509教室-0750-0915-英语246"
 video_glob: "**/*.mp4"
+sample_video_dir: "data/video_sample/509教室-0750-0915-英语246"
+sample_video: "data/video_sample/509教室-0750-0915-英语246/509A前摄像头/南通职大主楼509室047zk_20251029072500_20251029091707_1.mp4"
 
 # Ground truth for this course
 ground_truth: "data/ground_truth/509教室-0750-0915-英语246.xlsx"

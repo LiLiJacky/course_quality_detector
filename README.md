@@ -18,6 +18,9 @@ pip install -r requirements.txt
 ```bash
 # 读取 configs/config.yaml 执行全流程
 python scripts/run_pipeline.py --config configs/config.yaml
+
+# 如果仅跑小规模切片数据，添加 --sample_mode（需提前用 scripts/slice_videos.py 生成 sample）
+python scripts/run_pipeline.py --config configs/config.yaml --sample_mode
 ```
 
 输出文件：

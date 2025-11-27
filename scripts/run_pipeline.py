@@ -207,6 +207,17 @@ def parse_args():
         help="Path to video file or directory",
     )
     parser.add_argument(
+        "--sample_mode",
+        action="store_true",
+        help="Use sample video instead of full video for quick tests",
+    )
+    parser.add_argument(
+        "--sample_video",
+        type=Path,
+        default=None,
+        help="Path to sample video; if not provided, will use config sample_video",
+    )
+    parser.add_argument(
         "--gallery_dir",
         type=Path,
         default=Path("outputs/face_gallery"),
@@ -317,6 +328,7 @@ def apply_config(args):
         "report_path",
         "config",
         "allowed_ids",
+        "sample_video",
     }
     if cfg_path and cfg_path.exists():
         with open(cfg_path, "r", encoding="utf-8") as f:
@@ -342,6 +354,13 @@ def ensure_roster(args):
 
 def main():
     args = apply_config(parse_args())
+    # switch to sample video if requested
+    if args.sample_mode:
+        sample_vid = args.sample_video if args.sample_video else None
+        if not sample_vid:
+            sample_vid = getattr(args, "sample_video", None)
+        if sample_vid:
+            args.video = sample_vid
     roster_path = ensure_roster(args)
     args.allowed_ids = roster_path
     step_face_gallery(args)
