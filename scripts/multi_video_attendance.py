@@ -89,7 +89,9 @@ def parse_args():
     parser.add_argument("--max_frames", type=int, default=None, help="If None, process full video")
     parser.add_argument("--min_count", type=int, default=3)
     parser.add_argument("--max_images", type=int, default=None)
-    parser.add_argument("--target_count", type=int, default=None, help="(Deprecated) early-stop count; full pass by default")
+    parser.add_argument("--target_count", type=int, default=None, help="Early stop count; defaults to roster size or ground truth size")
+    parser.add_argument("--early_stop", action="store_true", help="Enable early stop when roster/GT size is reached")
+    parser.add_argument("--early_stop_min_frames", type=int, default=200, help="Minimum sampled frames before early stop can trigger")
     parser.add_argument("--ground_truth", type=Path, help="Ground truth attendance file (xlsx or txt)")
     parser.add_argument("--attendance_output", type=Path, default=Path("outputs/attendance.json"))
     parser.add_argument("--metrics_output", type=Path, default=Path("outputs/metrics.json"))
@@ -138,7 +140,9 @@ def main():
 
     agg_counts: Dict[str, int] = {}
     per_video: List[dict] = []
+    total_frames_processed = 0
     gt_ids = load_ground_truth(args.ground_truth)
+    target_count = args.target_count or (len(gt_ids) if gt_ids else len(allowed_ids))
     for vid in videos:
         tmp_out = args.attendance_output.parent / f"tmp_{vid.stem}.json"
         tmp_out.parent.mkdir(parents=True, exist_ok=True)
@@ -156,6 +160,13 @@ def main():
         for sid, cnt in result["recognized_counts"].items():
             agg_counts[sid] = agg_counts.get(sid, 0) + cnt
         per_video.append({"video": str(vid), "detected": len(result["attendance_ids"]), "faces": result.get("faces_detected", 0)})
+        total_frames_processed += result.get("frames_processed", 0)
+
+        current_ids = {sid for sid, cnt in agg_counts.items() if cnt >= args.min_count}
+        print(f"[progress] attendance so far: {len(current_ids)}/{target_count}, frames={total_frames_processed}")
+        if args.early_stop and len(current_ids) >= target_count and total_frames_processed >= args.early_stop_min_frames:
+            print("Early stop: all roster/GT IDs recognized with threshold applied.")
+            break
 
     attendance_ids = sorted([sid for sid, cnt in agg_counts.items() if cnt >= args.min_count])
     output = {

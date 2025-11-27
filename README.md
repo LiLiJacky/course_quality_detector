@@ -31,6 +31,10 @@ python scripts/multi_video_attendance.py --config configs/config.yaml \
 python scripts/multi_video_attendance.py --config configs/config.yaml --sample_mode \
   --attendance_output outputs/attendance_multi.json \
   --metrics_output outputs/metrics_multi.json
+
+# 如需早停（仅当识别到名册/GT 人数且达到最少帧数后才停）
+python scripts/multi_video_attendance.py --config configs/config.yaml \
+  --early_stop --early_stop_min_frames 200
 ```
 
 输出文件：
