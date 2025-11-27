@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import List
 
 import yaml
+from build_roster import build_roster
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -176,6 +177,30 @@ def parse_args():
         help="Directory with student images",
     )
     parser.add_argument(
+        "--excel",
+        type=Path,
+        default=Path("data/picture/2024级学生名单.xlsx"),
+        help="Excel roster path",
+    )
+    parser.add_argument(
+        "--class_name",
+        type=str,
+        default="英语246",
+        help="Class name filter when building roster",
+    )
+    parser.add_argument(
+        "--major_name",
+        type=str,
+        default="商务英语",
+        help="Major name filter when building roster",
+    )
+    parser.add_argument(
+        "--roster_output",
+        type=Path,
+        default=Path("rosters/english246.txt"),
+        help="Where to write roster if built from Excel",
+    )
+    parser.add_argument(
         "--video",
         type=str,
         default="data/video",
@@ -281,17 +306,44 @@ def parse_args():
 
 def apply_config(args):
     cfg_path: Path = args.config
+    path_keys = {
+        "picture_dir",
+        "excel",
+        "roster_output",
+        "gallery_dir",
+        "track_dir",
+        "attendance_path",
+        "metrics_path",
+        "report_path",
+        "config",
+        "allowed_ids",
+    }
     if cfg_path and cfg_path.exists():
         with open(cfg_path, "r", encoding="utf-8") as f:
             cfg = yaml.safe_load(f) or {}
         for k, v in cfg.items():
-            if hasattr(args, k):
-                setattr(args, k, v)
+            if hasattr(args, k) and v is not None:
+                if k in path_keys:
+                    setattr(args, k, Path(v))
+                else:
+                    setattr(args, k, v)
     return args
+
+
+def ensure_roster(args):
+    if args.allowed_ids and Path(args.allowed_ids).exists():
+        return Path(args.allowed_ids)
+    if not args.excel or not args.class_name or not args.major_name:
+        raise SystemExit("Roster file missing and excel/class/major not provided.")
+    args.roster_output.parent.mkdir(parents=True, exist_ok=True)
+    build_roster(args.excel, args.class_name, args.major_name, args.roster_output)
+    return args.roster_output
 
 
 def main():
     args = apply_config(parse_args())
+    roster_path = ensure_roster(args)
+    args.allowed_ids = roster_path
     step_face_gallery(args)
     if args.quick_attendance_only:
         step_quick_attendance(args)
