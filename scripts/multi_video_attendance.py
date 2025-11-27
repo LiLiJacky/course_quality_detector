@@ -68,7 +68,16 @@ def evaluate(pred_ids: Set[str], gt_ids: Set[str]) -> Dict[str, float]:
     prec = tp / len(pred_ids) if pred_ids else 0.0
     rec = tp / len(gt_ids) if gt_ids else 0.0
     f1 = 2 * prec * rec / (prec + rec) if prec + rec > 0 else 0.0
-    return {"precision": prec, "recall": rec, "f1": f1, "tp": tp, "gt": len(gt_ids), "pred": len(pred_ids)}
+    return {
+        "precision": prec,
+        "recall": rec,
+        "f1": f1,
+        "tp": tp,
+        "gt": len(gt_ids),
+        "pred": len(pred_ids),
+        "false_pos": sorted(list(pred_ids - gt_ids)),
+        "miss": sorted(list(gt_ids - pred_ids)),
+    }
 
 
 def parse_args():
@@ -191,6 +200,7 @@ def main():
     metrics = {"attendance": {"present": len(attendance_ids), "unique_ids": attendance_ids}}
     if gt_ids:
         metrics["evaluation"] = evaluate(set(attendance_ids), gt_ids)
+        metrics["ground_truth"] = sorted(list(gt_ids))
     args.metrics_output.parent.mkdir(parents=True, exist_ok=True)
     with open(args.metrics_output, "w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)

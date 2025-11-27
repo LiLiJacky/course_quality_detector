@@ -27,6 +27,31 @@ def render_report(metrics: dict) -> str:
         "- 参与度：未计算（需行为/姿态模块补充）",
     ]
 
+    if "evaluation" in metrics:
+        ev = metrics["evaluation"]
+        tp = ev.get("tp", 0)
+        gt = ev.get("gt", 0)
+        pred = ev.get("pred", 0)
+        prec = ev.get("precision", 0.0)
+        rec = ev.get("recall", 0.0)
+        f1 = ev.get("f1", 0.0)
+        fp = ev.get("false_pos", [])
+        fn = ev.get("miss", [])
+        lines.extend(
+            [
+                "",
+                "## 与标注对比 (Attendance Eval)",
+                f"- 预测人数：{pred}",
+                f"- GT 人数：{gt}",
+                f"- TP：{tp}",
+                f"- Precision：{prec:.3f}",
+                f"- Recall：{rec:.3f}",
+                f"- F1：{f1:.3f}",
+                f"- 误检(示例)：{', '.join(fp[:10]) if fp else '无'}",
+                f"- 漏检(示例)：{', '.join(fn[:10]) if fn else '无'}",
+            ]
+        )
+
     if "actions" in metrics:
         lines.extend(["", "## 行为统计", f"- 数据：{metrics['actions']}"])
     if "dialog" in metrics:
