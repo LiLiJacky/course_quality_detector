@@ -14,6 +14,8 @@ Config:
 
 import argparse
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -95,6 +97,7 @@ def parse_args():
     parser.add_argument("--ground_truth", type=Path, help="Ground truth attendance file (xlsx or txt)")
     parser.add_argument("--attendance_output", type=Path, default=Path("outputs/attendance.json"))
     parser.add_argument("--metrics_output", type=Path, default=Path("outputs/metrics.json"))
+    parser.add_argument("--report_output", type=Path, default=Path("outputs/report.md"), help="Optional report output (uses metrics.py + report.py)")
     return parser.parse_args()
 
 
@@ -111,6 +114,7 @@ def apply_config(args):
         "ground_truth",
         "attendance_output",
         "metrics_output",
+        "report_output",
     }
     for k, v in cfg.items():
         if hasattr(args, k):
@@ -191,6 +195,24 @@ def main():
     with open(args.metrics_output, "w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
     print(f"Saved metrics to {args.metrics_output}")
+
+    # Optional: generate report.md using existing scripts
+    if args.report_output:
+        try:
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(Path(__file__).resolve().parent / "report.py"),
+                    "--metrics",
+                    str(args.metrics_output),
+                    "--output",
+                    str(args.report_output),
+                ],
+                check=True,
+            )
+            print(f"Saved report to {args.report_output}")
+        except subprocess.CalledProcessError as exc:
+            print(f"[warn] report generation failed: {exc}")
 
 
 if __name__ == "__main__":
