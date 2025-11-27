@@ -2,12 +2,15 @@
 
 ## Quick start
 
-1) 创建 Conda 虚拟环境并安装依赖（GPU/CUDA 推荐，CPU 也可跑但较慢）：
+1) 创建 Conda 虚拟环境并安装依赖：
 ```bash
 conda create -y -n cqdetector python=3.10
 conda activate cqdetector
 pip install -r requirements.txt
 ```
+   - mac/CPU：直接运行，速度较慢。
+   - Linux + NVIDIA GPU（推荐）：确保已安装 CUDA 驱动，脚本会自动选择 CUDAExecutionProvider。
+   - Windows 11 + NVIDIA GPU：同样自动选择 CUDAExecutionProvider；若无 GPU 则回落 CPU。
 
 2) 编辑配置：`configs/config.yaml`（班级、专业、Excel、视频路径、采样/阈值等）。
 

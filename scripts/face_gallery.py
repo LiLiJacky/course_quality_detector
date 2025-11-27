@@ -9,18 +9,19 @@ Embeddings are stored in output_dir as:
 
 import argparse
 import json
+import platform
 from pathlib import Path
 from typing import List, Tuple
-
-import platform
 
 import numpy as np
 
 
 def _select_providers() -> list:
+    """Prefer CUDA on Windows/Linux if available; fallback to CPU."""
     try:
         import torch
-        if torch.cuda.is_available() and platform.system().lower().startswith("windows"):
+
+        if torch.cuda.is_available() and platform.system().lower() in ("windows", "linux"):
             return ["CUDAExecutionProvider", "CPUExecutionProvider"]
     except Exception:
         pass

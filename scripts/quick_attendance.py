@@ -35,9 +35,11 @@ def load_gallery(gallery_dir: Path) -> Tuple[np.ndarray, List[dict]]:
 
 
 def _select_providers() -> list:
+    """Prefer CUDA on Windows/Linux if available; fallback to CPU."""
     try:
         import torch
-        if torch.cuda.is_available() and platform.system().lower().startswith("windows"):
+
+        if torch.cuda.is_available() and platform.system().lower() in ("windows", "linux"):
             return ["CUDAExecutionProvider", "CPUExecutionProvider"]
     except Exception:
         pass
