@@ -99,6 +99,7 @@ def parse_args():
     parser.add_argument("--frame_stride", type=int, default=20)
     parser.add_argument("--max_frames", type=int, default=None, help="If None, process full video")
     parser.add_argument("--min_count", type=int, default=3, help="Min occurrences to accept an ID (increase to reduce false positives)")
+    parser.add_argument("--min_recognized_counts", type=int, default=0, help="Filter out IDs whose total recognized counts below this value")
     parser.add_argument("--max_images", type=int, default=None)
     parser.add_argument("--target_count", type=int, default=None, help="Early stop count; defaults to roster size or ground truth size")
     parser.add_argument("--early_stop", action="store_true", help="Enable early stop when roster/GT size is reached")
@@ -187,6 +188,8 @@ def main():
     attendance_ids = []
     for sid, cnt in agg_counts.items():
         if cnt < args.min_count:
+            continue
+        if args.min_recognized_counts and cnt < args.min_recognized_counts:
             continue
         mean_sim = agg_sim_sums.get(sid, 0.0) / cnt
         if mean_sim >= args.match_threshold:

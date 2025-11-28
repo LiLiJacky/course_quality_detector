@@ -29,10 +29,11 @@ det_name: "buffalo_l"
 rec_name: "adaface_ir101"
 
 # Attendance / matching
-match_threshold: 0.3  # 典型人脸识别阈值，避免过低
+match_threshold: 0.32 # 略提高阈值，降低误检
 frame_stride: 10      # 更密集采样以提升召回
 max_frames: null      # 全量帧（每段视频全扫）
 min_count: 5          # 更严格的最少出现次数，进一步减少误检
+min_recognized_counts: 10  # 全局计数低于此值视为误检，过滤掉
 max_images: null   # set to an int to limit gallery images
 max_crops: null    # only used in non-quick mode
 
