@@ -136,8 +136,6 @@ def apply_config(args):
         "attendance_output",
         "metrics_output",
         "report_output",
-        "back_cam_keywords",
-        "front_cam_keywords",
     }
     for k, v in cfg.items():
         if hasattr(args, k):
