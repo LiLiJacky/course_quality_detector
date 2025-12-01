@@ -251,7 +251,7 @@ def main():
     attendance_ids = sorted(attendance_ids)
     output = {
         "attendance_ids": attendance_ids,
-        "recognized_counts": agg_counts,
+        "recognized_counts": {**agg_counts_back, **agg_counts_front},
         "per_video": per_video,
         "threshold": args.match_threshold,
         "frame_stride": args.frame_stride,
