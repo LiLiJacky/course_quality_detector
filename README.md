@@ -37,6 +37,11 @@ python scripts/multi_video_attendance.py --config configs/config.yaml --sample_m
 # 如需早停（仅当识别到名册/GT 人数且达到最少帧数后才停）
 python scripts/multi_video_attendance.py --config configs/config.yaml \
   --early_stop --early_stop_min_frames 200
+
+摄像头分组与权重（配置可调）
+- 通过文件名/路径关键字区分：后摄包含 `back_cam_keywords`（默认 ["B","后"]），前摄包含 `front_cam_keywords`（默认 ["A","前"]）。同一摄像头分段视频会自动合并统计。
+- 权重默认：后摄 70 分、前摄补分 30 分，出勤阈值 60；仅前摄补漏时需满足更高计数/阈值，权重 60。
+- 计数门槛默认：后摄 min_count_back=5，前摄补充 min_count_front=3，前摄补漏 min_count_front_only=8、min_recognized_counts_front_only=12；全局计数过滤 min_recognized_counts=10；相似度阈值 0.32（前摄补漏阈值 0.34）。
 ```
 
 输出文件：
