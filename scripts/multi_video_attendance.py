@@ -100,6 +100,17 @@ def parse_args():
     parser.add_argument("--max_frames", type=int, default=None, help="If None, process full video")
     parser.add_argument("--min_count", type=int, default=3, help="Min occurrences to accept an ID (increase to reduce false positives)")
     parser.add_argument("--min_recognized_counts", type=int, default=0, help="Filter out IDs whose total recognized counts below this value")
+    parser.add_argument("--back_cam_keywords", type=str, nargs="*", default=["B", "后"], help="Keywords to classify back cameras")
+    parser.add_argument("--front_cam_keywords", type=str, nargs="*", default=["A", "前"], help="Keywords to classify front cameras")
+    parser.add_argument("--weight_back", type=int, default=70, help="Score weight for back camera hit")
+    parser.add_argument("--weight_front", type=int, default=30, help="Score weight for front camera when back hit")
+    parser.add_argument("--weight_front_only", type=int, default=60, help="Score weight when only front cameras hit")
+    parser.add_argument("--attend_score_threshold", type=int, default=60, help="Score threshold to mark attendance")
+    parser.add_argument("--min_count_back", type=int, default=5, help="Min count in back cameras")
+    parser.add_argument("--min_count_front", type=int, default=3, help="Min count in front cameras (when back hit)")
+    parser.add_argument("--min_count_front_only", type=int, default=8, help="Min count when only front cameras hit")
+    parser.add_argument("--min_recognized_counts_front_only", type=int, default=12, help="Global count filter for front-only hits")
+    parser.add_argument("--thr_front_only", type=float, default=0.34, help="Similarity threshold for front-only hits")
     parser.add_argument("--max_images", type=int, default=None)
     parser.add_argument("--target_count", type=int, default=None, help="Early stop count; defaults to roster size or ground truth size")
     parser.add_argument("--early_stop", action="store_true", help="Enable early stop when roster/GT size is reached")
@@ -125,6 +136,8 @@ def apply_config(args):
         "attendance_output",
         "metrics_output",
         "report_output",
+        "back_cam_keywords",
+        "front_cam_keywords",
     }
     for k, v in cfg.items():
         if hasattr(args, k):
@@ -152,12 +165,22 @@ def main():
     if not videos:
         raise SystemExit(f"No videos found under {args.video_dir} with pattern {args.video_glob}")
 
-    agg_counts: Dict[str, int] = {}
-    agg_sim_sums: Dict[str, float] = {}
+    agg_counts_back: Dict[str, int] = {}
+    agg_sim_sums_back: Dict[str, float] = {}
+    agg_counts_front: Dict[str, int] = {}
+    agg_sim_sums_front: Dict[str, float] = {}
     per_video: List[dict] = []
     total_frames_processed = 0
     gt_ids = load_ground_truth(args.ground_truth)
     target_count = args.target_count or (len(gt_ids) if gt_ids else len(allowed_ids))
+
+    def is_back_camera(path: Path) -> bool:
+        name = str(path)
+        return any(k in name for k in args.back_cam_keywords)
+
+    def is_front_camera(path: Path) -> bool:
+        name = str(path)
+        return any(k in name for k in args.front_cam_keywords)
     for vid in videos:
         tmp_out = args.attendance_output.parent / f"tmp_{vid.stem}.json"
         tmp_out.parent.mkdir(parents=True, exist_ok=True)
@@ -172,27 +195,60 @@ def main():
             allowed_ids,
             tmp_out,
         )
+        cam_is_back = is_back_camera(vid)
+        cam_is_front = is_front_camera(vid)
         for sid, cnt in result["recognized_counts"].items():
-            agg_counts[sid] = agg_counts.get(sid, 0) + cnt
+            if cam_is_back:
+                agg_counts_back[sid] = agg_counts_back.get(sid, 0) + cnt
+            elif cam_is_front:
+                agg_counts_front[sid] = agg_counts_front.get(sid, 0) + cnt
         for sid, sim_sum in result.get("similarity_sums", {}).items():
-            agg_sim_sums[sid] = agg_sim_sums.get(sid, 0.0) + sim_sum
+            if cam_is_back:
+                agg_sim_sums_back[sid] = agg_sim_sums_back.get(sid, 0.0) + sim_sum
+            elif cam_is_front:
+                agg_sim_sums_front[sid] = agg_sim_sums_front.get(sid, 0.0) + sim_sum
         per_video.append({"video": str(vid), "detected": len(result["attendance_ids"]), "faces": result.get("faces_detected", 0)})
         total_frames_processed += result.get("frames_processed", 0)
 
-        current_ids = {sid for sid, cnt in agg_counts.items() if cnt >= args.min_count}
+        current_ids = set()
+        for sid in set(list(agg_counts_back.keys()) + list(agg_counts_front.keys())):
+            back_cnt = agg_counts_back.get(sid, 0)
+            front_cnt = agg_counts_front.get(sid, 0)
+            if back_cnt >= args.min_count_back or front_cnt >= args.min_count_front:
+                current_ids.add(sid)
         print(f"[progress] attendance so far: {len(current_ids)}/{target_count}, frames={total_frames_processed}")
         if args.early_stop and len(current_ids) >= target_count and total_frames_processed >= args.early_stop_min_frames:
             print("Early stop: all roster/GT IDs recognized with threshold applied.")
             break
 
     attendance_ids = []
-    for sid, cnt in agg_counts.items():
-        if cnt < args.min_count:
-            continue
-        if args.min_recognized_counts and cnt < args.min_recognized_counts:
-            continue
-        mean_sim = agg_sim_sums.get(sid, 0.0) / cnt
-        if mean_sim >= args.match_threshold:
+    all_ids = set(list(agg_counts_back.keys()) + list(agg_counts_front.keys()))
+    for sid in all_ids:
+        back_cnt = agg_counts_back.get(sid, 0)
+        back_mean = (agg_sim_sums_back.get(sid, 0.0) / back_cnt) if back_cnt else 0.0
+        front_cnt = agg_counts_front.get(sid, 0)
+        front_mean = (agg_sim_sums_front.get(sid, 0.0) / front_cnt) if front_cnt else 0.0
+
+        score = 0
+        back_hit = back_cnt >= args.min_count_back and back_mean >= args.match_threshold
+        front_hit = front_cnt >= args.min_count_front and front_mean >= args.match_threshold
+
+        if back_hit:
+            score += args.weight_back
+            if front_hit:
+                score += args.weight_front
+        else:
+            if (
+                front_cnt >= args.min_count_front_only
+                and (not args.min_recognized_counts_front_only or front_cnt >= args.min_recognized_counts_front_only)
+                and front_mean >= args.thr_front_only
+            ):
+                score += args.weight_front_only
+
+        if args.min_recognized_counts and (back_cnt + front_cnt) < args.min_recognized_counts:
+            score = 0
+
+        if score >= args.attend_score_threshold:
             attendance_ids.append(sid)
     attendance_ids = sorted(attendance_ids)
     output = {

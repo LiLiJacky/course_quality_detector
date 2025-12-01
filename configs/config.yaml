@@ -29,11 +29,23 @@ det_name: "buffalo_l"
 rec_name: "adaface_ir101"
 
 # Attendance / matching
-match_threshold: 0.32 # 略提高阈值，降低误检
+match_threshold: 0.32 # 基准阈值
 frame_stride: 10      # 更密集采样以提升召回
 max_frames: null      # 全量帧（每段视频全扫）
-min_count: 5          # 更严格的最少出现次数，进一步减少误检
-min_recognized_counts: 10  # 全局计数低于此值视为误检，过滤掉
+min_count: 5          # 单视频最少出现次数
+min_recognized_counts: 10  # 全局计数过滤，低于此值视为误检
+# 多摄像头权重与补漏策略
+back_cam_keywords: ["B", "后"]          # 识别为后摄的关键字
+front_cam_keywords: ["A", "前"]        # 识别为前摄的关键字
+weight_back: 70                       # 后摄命中权重
+weight_front: 30                      # 前摄补充分权重（仅在后摄已命中时叠加）
+weight_front_only: 60                 # 仅前摄补漏权重（无后摄命中）
+attend_score_threshold: 60            # 出勤分阈值
+min_count_back: 5                     # 后摄最少出现次数
+min_count_front: 3                    # 前摄补充最少出现次数
+min_count_front_only: 8               # 前摄补漏最少出现次数
+min_recognized_counts_front_only: 12  # 前摄补漏的全局计数要求
+thr_front_only: 0.34                  # 前摄补漏的相似度阈值（可高于 match_threshold）
 max_images: null   # set to an int to limit gallery images
 max_crops: null    # only used in non-quick mode
 
